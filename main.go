@@ -2,12 +2,20 @@ package main
 
 import (
 	"blog-aggregator/internal/config"
+	"blog-aggregator/internal/database"
+	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"os"
+	"time"
+
+	"github.com/google/uuid"
+	_ "github.com/lib/pq"
 )
 
 type state struct {
+	db     *database.Queries
 	config *config.Config
 }
 
@@ -29,9 +37,14 @@ func main() {
 	ste := state{}
 	ste.config = &cfg
 
+	db, err := sql.Open("postgres", cfg.DbUrl)
+	dbQueries := database.New(db)
+	ste.db = dbQueries
+
 	cmds := commands{
 		cmds: map[string]func(*state, command) error{
-			"login": handlerLogin,
+			"login":    handlerLogin,
+			"register": handlerRegister,
 		},
 	}
 
@@ -40,8 +53,6 @@ func main() {
 		fmt.Println("not enough arguments.")
 		os.Exit(1)
 	}
-
-	fmt.Println(args)
 
 	cmd := command{
 		name: args[1],
@@ -61,12 +72,50 @@ func handlerLogin(s *state, cmd command) error {
 		return errors.New("username required")
 	}
 
+	ctx := context.Background()
+
+	if _, err := s.db.GetUser(ctx, cmd.args[0]); err != nil {
+		if err != nil {
+			return errors.New("user does not exist")
+		}
+		return errors.New("user already exists")
+	}
+
 	err := s.config.SetUser(cmd.args[0])
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("User set to %s\n", cmd.args[0])
+	return nil
+}
+
+func handlerRegister(s *state, cmd command) error {
+	if len(cmd.args) < 1 {
+		return errors.New("username required")
+	}
+
+	ctx := context.Background()
+
+	params := database.CreateUserParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      cmd.args[0],
+	}
+
+	usr, err := s.db.CreateUser(ctx, params)
+	if err != nil {
+		return err
+	}
+
+	err = s.config.SetUser(usr.Name)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("New user created\nName:%s\nCreatedAt:%v\nUpdatedAt:%v\nID:%v\n", usr.Name, usr.CreatedAt, usr.UpdatedAt, usr.ID.ID())
+
 	return nil
 }
 
