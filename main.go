@@ -45,6 +45,8 @@ func main() {
 		cmds: map[string]func(*state, command) error{
 			"login":    handlerLogin,
 			"register": handlerRegister,
+			"reset":    handlerReset,
+			"users":    handlerUsers,
 		},
 	}
 
@@ -115,6 +117,41 @@ func handlerRegister(s *state, cmd command) error {
 	}
 
 	fmt.Printf("New user created\nName:%s\nCreatedAt:%v\nUpdatedAt:%v\nID:%v\n", usr.Name, usr.CreatedAt, usr.UpdatedAt, usr.ID.ID())
+
+	return nil
+}
+
+func handlerReset(s *state, cmd command) error {
+	ctx := context.Background()
+
+	err := s.db.Reset(ctx)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("reset successful")
+
+	return nil
+}
+
+func handlerUsers(s *state, cmd command) error {
+
+	ctx := context.Background()
+
+	users, err := s.db.GetUsers(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+
+		fmt.Printf("* %s ", user)
+		if user == s.config.CurrentUser {
+			fmt.Println("(current)")
+		} else {
+			fmt.Println()
+		}
+	}
 
 	return nil
 }
