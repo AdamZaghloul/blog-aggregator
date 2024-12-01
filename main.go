@@ -40,13 +40,15 @@ func main() {
 
 	cmds := commands{
 		cmds: map[string]func(*state, command) error{
-			"login":    handlerLogin,
-			"register": handlerRegister,
-			"reset":    handlerReset,
-			"users":    handlerUsers,
-			"agg":      handlerAgg,
-			"addfeed":  handlerAddFeed,
-			"feeds":    handlerFeeds,
+			"login":     handlerLogin,
+			"register":  handlerRegister,
+			"reset":     handlerReset,
+			"users":     handlerUsers,
+			"agg":       handlerAgg,
+			"addfeed":   handlerAddFeed,
+			"feeds":     handlerFeeds,
+			"follow":    handlerFollow,
+			"following": handlerFollowing,
 		},
 	}
 
