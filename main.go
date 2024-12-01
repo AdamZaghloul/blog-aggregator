@@ -48,6 +48,7 @@ func main() {
 			"reset":    handlerReset,
 			"users":    handlerUsers,
 			"agg":      handlerAgg,
+			"addfeed":  handlerAddFeed,
 		},
 	}
 
@@ -161,6 +162,39 @@ func handlerAgg(s *state, cmd command) error {
 	ctx := context.Background()
 
 	feed, err := fetchFeed(ctx, "https://www.wagslane.dev/index.xml")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(feed)
+
+	return nil
+}
+
+func handlerAddFeed(s *state, cmd command) error {
+	if len(cmd.args) < 2 {
+		return errors.New("need name and url args")
+	}
+
+	ctx := context.Background()
+
+	user, err := s.db.GetUser(ctx, s.config.CurrentUser)
+	if err != nil {
+		return err
+	}
+
+	params := database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      cmd.args[0],
+		Url:       cmd.args[1],
+		UserID:    user.ID,
+	}
+
+	feed := database.Feed{}
+
+	feed, err = s.db.CreateFeed(ctx, params)
 	if err != nil {
 		return err
 	}
