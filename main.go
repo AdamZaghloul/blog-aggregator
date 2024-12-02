@@ -45,10 +45,11 @@ func main() {
 			"reset":     handlerReset,
 			"users":     handlerUsers,
 			"agg":       handlerAgg,
-			"addfeed":   handlerAddFeed,
+			"addfeed":   middlewareLoggedIn(handlerAddFeed),
 			"feeds":     handlerFeeds,
-			"follow":    handlerFollow,
-			"following": handlerFollowing,
+			"follow":    middlewareLoggedIn(handlerFollow),
+			"following": middlewareLoggedIn(handlerFollowing),
+			"unfollow":  middlewareLoggedIn(handlerUnfollow),
 		},
 	}
 

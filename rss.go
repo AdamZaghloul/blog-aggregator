@@ -1,8 +1,11 @@
 package main
 
 import (
+	"blog-aggregator/internal/database"
 	"context"
+	"database/sql"
 	"encoding/xml"
+	"fmt"
 	"html"
 	"io"
 	"net/http"
@@ -71,4 +74,37 @@ func unescapeStrings(feed *RSSFeed) {
 		item.Description = html.UnescapeString((feed.Channel.Description))
 	}
 
+}
+
+func scrapeFeeds(s *state) error {
+	nextFeed, err := s.db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return err
+	}
+
+	params := database.MarkFeedFetchedParams{
+		LastFetchedAt: sql.NullTime{time.Now(), true},
+		UpdatedAt:     time.Now(),
+		ID:            nextFeed.ID,
+	}
+
+	_, err = s.db.MarkFeedFetched(context.Background(), params)
+	if err != nil {
+		return err
+	}
+
+	feed, err := fetchFeed(context.Background(), nextFeed.Url)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println()
+	fmt.Printf("Printing updates from %s\n", feed.Channel.Title)
+	fmt.Println()
+
+	for _, item := range feed.Channel.Item {
+		fmt.Printf("%s\n", item.Title)
+	}
+
+	return nil
 }
