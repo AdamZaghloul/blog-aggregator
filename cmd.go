@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -111,7 +112,10 @@ func handlerAgg(s *state, cmd command) error {
 
 	ticker := time.NewTicker(timeBetweenRequests)
 	for ; ; <-ticker.C {
-		scrapeFeeds(s)
+		err = scrapeFeeds(s)
+		if err != nil {
+			return err
+		}
 	}
 }
 
@@ -231,6 +235,37 @@ func handlerUnfollow(s *state, cmd command, user database.User) error {
 
 	fmt.Println()
 	fmt.Printf("%s is now following %s\n", user.Name, feed.Name)
+	fmt.Println()
+
+	return nil
+}
+
+func handlerBrowse(s *state, cmd command, user database.User) error {
+	limit := 2
+	var err error
+
+	if len(cmd.args) > 0 {
+		limit, err = strconv.Atoi(cmd.args[0])
+		if err != nil {
+			limit = 2
+		}
+	}
+
+	params := database.GetPostsForUserParams{
+		ID:    user.ID,
+		Limit: int32(limit),
+	}
+	posts, err := s.db.GetPostsForUser(context.Background(), params)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println()
+
+	for _, post := range posts {
+		fmt.Printf("%s - %s - %v\n", post.Title, post.Name.String, post.PublishedAt)
+	}
+
 	fmt.Println()
 
 	return nil

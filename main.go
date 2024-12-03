@@ -50,6 +50,7 @@ func main() {
 			"follow":    middlewareLoggedIn(handlerFollow),
 			"following": middlewareLoggedIn(handlerFollowing),
 			"unfollow":  middlewareLoggedIn(handlerUnfollow),
+			"browse":    middlewareLoggedIn(handlerBrowse),
 		},
 	}
 
@@ -57,6 +58,11 @@ func main() {
 	if len(args) < 2 {
 		fmt.Println("not enough arguments.")
 		os.Exit(1)
+	}
+
+	if args[1] == "help" {
+		printHelp(cmds)
+		return
 	}
 
 	cmd := command{
@@ -89,4 +95,12 @@ func (c *commands) run(s *state, cmd command) error {
 	}
 
 	return nil
+}
+
+func printHelp(cmds commands) {
+	fmt.Println()
+	for key, _ := range cmds.cmds {
+		fmt.Println(key)
+	}
+	fmt.Println()
 }

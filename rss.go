@@ -9,7 +9,10 @@ import (
 	"html"
 	"io"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type RSSFeed struct {
@@ -99,11 +102,35 @@ func scrapeFeeds(s *state) error {
 	}
 
 	fmt.Println()
-	fmt.Printf("Printing updates from %s\n", feed.Channel.Title)
+	fmt.Printf("Saving updates from %s\n", feed.Channel.Title)
 	fmt.Println()
 
 	for _, item := range feed.Channel.Item {
 		fmt.Printf("%s\n", item.Title)
+		pubTime, err := time.Parse(time.RFC1123, item.PubDate)
+		if err != nil {
+			return err
+		}
+
+		params := database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       item.Title,
+			Url:         item.Link,
+			Description: sql.NullString{item.Description, true},
+			PublishedAt: pubTime,
+			FeedID:      nextFeed.ID,
+		}
+
+		_, err = s.db.CreatePost(context.Background(), params)
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate key value") {
+				//Do nothing because we will leave the post as one entry in the DB.
+			} else {
+				return err
+			}
+		}
 	}
 
 	return nil
